@@ -16,6 +16,7 @@ state they spawned into.
 - **Spawning Geometry:** The 5th geometry from each `TRAJn/geometries.xyz` file
 - **Source:** Automatically scans all top-level TRAJ directories in the base folder
 - **Current Processing:** TRAJ1 (72 subtrajectories) + TRAJ2 (72 subtrajectories) = 144 total
+- **Molecule-agnostic:** The script dynamically reads the number of atoms from each geometry file, so it works with molecules of any size
 - Note: Subdirectories with the same name as their parent are excluded (e.g., TRAJ1/TRAJ1)
 
 ### State Determination
