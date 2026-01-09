@@ -16,17 +16,31 @@ def read_fifth_geometry(geom_file):
     with open(geom_file, 'r') as f:
         lines = f.readlines()
     
-    # Each geometry block starts with number of atoms
-    # Geometry 5 starts at line index 160 (0-indexed)
-    # Lines 160-199 contain the 5th geometry (40 lines total: 1 natoms + 1 comment + 38 atoms)
-    if len(lines) < 200:
+    if len(lines) < 1:
+        return None, None, None
+    
+    # Read number of atoms from the first line
+    try:
+        natoms = int(lines[0].strip())
+    except (ValueError, IndexError):
+        return None, None, None
+    
+    # Each geometry block has: 1 line (natoms) + 1 line (comment) + natoms lines (coordinates)
+    block_size = natoms + 2
+    
+    # Geometry 5 is at index 4 (0-indexed), so it starts at line 4 * block_size
+    geom_5_start = 4 * block_size
+    geom_5_end = geom_5_start + block_size
+    
+    # Check if file is long enough
+    if len(lines) < geom_5_end:
         return None, None, None
     
     # Extract lines for 5th geometry
-    geom_lines = lines[160:200]
+    geom_lines = lines[geom_5_start:geom_5_end]
     
     # Get number of atoms and timestep info
-    natoms = geom_lines[0].strip()
+    natoms_line = geom_lines[0].strip()
     timestep_line = geom_lines[1].strip()
     
     # Extract the step number from timestep line
