@@ -7,6 +7,7 @@ by the state it spawned into.
 
 import os
 import re
+import argparse
 from pathlib import Path
 from collections import defaultdict
 
@@ -104,15 +105,30 @@ def get_spawn_state(energies_file, timestep=25):
     return None
 
 
-def main():
+def main(input_dir=None, output_dir=None):
     # Base directory containing all TRAJ folders
-    base_dir = Path("/data/anik/data-anik/mols/pcp/AIMS/DIE200/0.07/trajdata")
+    if input_dir is None:
+        base_dir = Path.cwd()
+    else:
+        base_dir = Path(input_dir).resolve()
+    
+    # Output directory (defaults to same as input)
+    if output_dir is None:
+        out_dir = base_dir
+    else:
+        out_dir = Path(output_dir).resolve()
+    
+    print(f"Input directory: {base_dir}")
+    print(f"Output directory: {out_dir}")
+    
+    # Create output directory if it doesn't exist
+    out_dir.mkdir(parents=True, exist_ok=True)
     
     # Find all top-level TRAJ directories (TRAJ1, TRAJ2, ...)
     top_traj_dirs = sorted([d for d in base_dir.iterdir() 
                            if d.is_dir() and d.name.startswith('TRAJ')])
     
-    print(f"Found {len(top_traj_dirs)} top-level TRAJ directories: {[d.name for d in top_traj_dirs]}")
+    print(f"\nFound {len(top_traj_dirs)} top-level TRAJ directories: {[d.name for d in top_traj_dirs]}")
     
     # Dictionary to store geometries by state
     geometries_by_state = defaultdict(list)
@@ -121,9 +137,9 @@ def main():
     for top_traj_dir in top_traj_dirs:
         top_traj_name = top_traj_dir.name
         
-        # Find all TRAJn subdirectories (excluding the one with the same name as parent)
+        # Find all TRAJn subdirectories (excluding TRAJ1 which is the original trajectory)
         traj_dirs = sorted([d for d in top_traj_dir.iterdir() 
-                           if d.is_dir() and d.name.startswith('TRAJ') and d.name != top_traj_name])
+                           if d.is_dir() and d.name.startswith('TRAJ') and d.name != 'TRAJ1'])
         
         print(f"\n{top_traj_name}: Found {len(traj_dirs)} subtrajectories")
         
@@ -160,10 +176,8 @@ def main():
             print(f"{top_traj_name}/{traj_name}: spawned into state {state}")
     
     # Write output files
-    output_dir = Path("/data/anik/data-anik/mols/pcp/AIMS/DIE200/0.07/trajdata")
-    
     for state, geoms in sorted(geometries_by_state.items()):
-        output_file = output_dir / f"{state}.spawn.xyz"
+        output_file = out_dir / f"{state}.spawn.xyz"
         
         with open(output_file, 'w') as f:
             for natoms, comment, atoms in geoms:
@@ -183,4 +197,35 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(
+        description='Extract spawning geometries from trajectory data and categorize by spawned state.',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  # Run in current directory (default)
+  python3 extract_spawning_geometries.py
+  
+  # Specify input directory
+  python3 extract_spawning_geometries.py -i /path/to/trajdata
+  
+  # Specify both input and output directories
+  python3 extract_spawning_geometries.py -i /path/to/trajdata -o /path/to/output
+        """
+    )
+    
+    parser.add_argument(
+        '-i', '--input',
+        type=str,
+        default=None,
+        help='Input directory containing TRAJ folders (default: current directory)'
+    )
+    
+    parser.add_argument(
+        '-o', '--output',
+        type=str,
+        default=None,
+        help='Output directory for spawn.xyz files (default: same as input directory)'
+    )
+    
+    args = parser.parse_args()
+    main(input_dir=args.input, output_dir=args.output)
